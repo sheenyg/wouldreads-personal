@@ -71,13 +71,18 @@ export async function aggregateArticles(): Promise<Article[]> {
 
   // Sort by published date (newest first) and limit to 50 articles
   return uniqueArticles
-    .sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime())
+    .sort((a, b) => {
+      const dateA = a.publishedAt instanceof Date ? a.publishedAt : new Date(a.publishedAt);
+      const dateB = b.publishedAt instanceof Date ? b.publishedAt : new Date(b.publishedAt);
+      return dateB.getTime() - dateA.getTime();
+    })
     .slice(0, 50);
 }
 
-export function formatTimeAgo(date: Date): string {
+export function formatTimeAgo(date: Date | string): string {
+  const dateObj = date instanceof Date ? date : new Date(date);
   const now = new Date();
-  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+  const diffInHours = Math.floor((now.getTime() - dateObj.getTime()) / (1000 * 60 * 60));
   
   if (diffInHours < 1) {
     return 'Just now';
@@ -90,7 +95,7 @@ export function formatTimeAgo(date: Date): string {
     } else if (diffInDays < 7) {
       return `${diffInDays}d ago`;
     } else {
-      return date.toLocaleDateString();
+      return dateObj.toLocaleDateString();
     }
   }
 }

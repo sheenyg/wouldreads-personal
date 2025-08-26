@@ -7,6 +7,23 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Normalizes an article object, ensuring publishedAt is a Date object
+ */
+export function normalizeArticle(article: Article): Article {
+  return {
+    ...article,
+    publishedAt: article.publishedAt instanceof Date ? article.publishedAt : new Date(article.publishedAt)
+  };
+}
+
+/**
+ * Normalizes an array of articles, ensuring all publishedAt fields are Date objects
+ */
+export function normalizeArticles(articles: Article[]): Article[] {
+  return articles.map(normalizeArticle);
+}
+
+/**
  * Randomizes articles by source, ensuring each source that has articles 
  * gets at least 2 articles represented in the final list (if available).
  * Remaining slots are filled randomly from all articles.

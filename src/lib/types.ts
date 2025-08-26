@@ -4,7 +4,7 @@ export interface Article {
   description: string;
   link: string;
   source: string;
-  publishedAt: Date;
+  publishedAt: Date | string;
   isRead: boolean;
 }
 

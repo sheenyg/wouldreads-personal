@@ -7,7 +7,7 @@ import { ArticleCard } from "@/components/ArticleCard";
 import { RefreshCw, Gear, Calendar, Shuffle } from "@phosphor-icons/react";
 import { Article } from "@/lib/types";
 import { aggregateArticles } from "@/lib/rss";
-import { randomizeArticlesBySource } from "@/lib/utils";
+import { randomizeArticlesBySource, normalizeArticles } from "@/lib/utils";
 import { toast, Toaster } from 'sonner';
 
 function App() {
@@ -42,7 +42,8 @@ function App() {
     };
 
     const shuffleArticles = () => {
-        const shuffled = randomizeArticlesBySource(articles);
+        const normalizedArticles = normalizeArticles(articles);
+        const shuffled = randomizeArticlesBySource(normalizedArticles);
         setDisplayedArticles(shuffled);
         
         // Count articles by source for toast message
@@ -85,13 +86,18 @@ function App() {
     useEffect(() => {
         if (articles.length === 0) {
             loadArticles();
+        } else {
+            // Normalize articles when loading from storage to ensure dates are Date objects
+            const normalizedArticles = normalizeArticles(articles);
+            setArticles(normalizedArticles);
         }
     }, []);
 
     // Randomize displayed articles when articles change
     useEffect(() => {
         if (articles.length > 0) {
-            const randomized = randomizeArticlesBySource(articles);
+            const normalizedArticles = normalizeArticles(articles);
+            const randomized = randomizeArticlesBySource(normalizedArticles);
             setDisplayedArticles(randomized);
         } else {
             setDisplayedArticles([]);
