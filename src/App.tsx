@@ -4,13 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArticleCard } from "@/components/ArticleCard";
-import { RefreshCw, Gear, Calendar } from "@phosphor-icons/react";
+import { RefreshCw, Gear, Calendar, Shuffle } from "@phosphor-icons/react";
 import { Article } from "@/lib/types";
 import { aggregateArticles } from "@/lib/rss";
+import { randomizeArticlesBySource } from "@/lib/utils";
 import { toast, Toaster } from 'sonner';
 
 function App() {
     const [articles, setArticles] = useKV<Article[]>("articles", []);
+    const [displayedArticles, setDisplayedArticles] = useState<Article[]>([]);
     const [readArticleIds, setReadArticleIds] = useKV<string[]>("read-articles", []);
     const [isLoading, setIsLoading] = useState(false);
     const [liveRss, setLiveRss] = useKV<boolean>("live-rss", true);
@@ -39,6 +41,23 @@ function App() {
         }
     };
 
+    const shuffleArticles = () => {
+        const shuffled = randomizeArticlesBySource(articles);
+        setDisplayedArticles(shuffled);
+        
+        // Count articles by source for toast message
+        const sourceCount = shuffled.reduce((acc, article) => {
+            acc[article.source] = (acc[article.source] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+        
+        const sourcesWithMultiple = Object.entries(sourceCount)
+            .filter(([_, count]) => count >= 2)
+            .length;
+            
+        toast.success(`Shuffled articles - ${sourcesWithMultiple} sources with 2+ articles`);
+    };
+
     const handleMarkAsRead = (articleId: string) => {
         setReadArticleIds(currentReadIds => {
             const readSet = new Set(currentReadIds);
@@ -50,13 +69,16 @@ function App() {
             return Array.from(readSet);
         });
 
-        setArticles(currentArticles => 
-            currentArticles.map(article => 
+        // Update both articles and displayedArticles
+        const updateReadStatus = (articlesList: Article[]) => 
+            articlesList.map(article => 
                 article.id === articleId 
                     ? { ...article, isRead: !article.isRead }
                     : article
-            )
-        );
+            );
+
+        setArticles(currentArticles => updateReadStatus(currentArticles));
+        setDisplayedArticles(currentDisplayed => updateReadStatus(currentDisplayed));
     };
 
     // Load articles on mount if we don't have any
@@ -66,19 +88,31 @@ function App() {
         }
     }, []);
 
+    // Randomize displayed articles when articles change
+    useEffect(() => {
+        if (articles.length > 0) {
+            const randomized = randomizeArticlesBySource(articles);
+            setDisplayedArticles(randomized);
+        } else {
+            setDisplayedArticles([]);
+        }
+    }, [articles]);
+
     // Update read status when readArticleIds changes
     useEffect(() => {
         const readSet = new Set(readArticleIds);
-        setArticles(currentArticles => 
-            currentArticles.map(article => ({
+        const updateReadStatus = (articlesList: Article[]) => 
+            articlesList.map(article => ({
                 ...article,
                 isRead: readSet.has(article.id)
-            }))
-        );
+            }));
+
+        setArticles(currentArticles => updateReadStatus(currentArticles));
+        setDisplayedArticles(currentDisplayed => updateReadStatus(currentDisplayed));
     }, [readArticleIds]);
 
-    const readCount = articles.filter(article => article.isRead).length;
-    const totalCount = articles.length;
+    const readCount = displayedArticles.filter(article => article.isRead).length;
+    const totalCount = displayedArticles.length;
 
     return (
         <div className="min-h-screen bg-background">
@@ -112,6 +146,16 @@ function App() {
                             Refresh Articles
                         </Button>
                         
+                        <Button 
+                            onClick={shuffleArticles} 
+                            disabled={displayedArticles.length === 0}
+                            variant="outline"
+                            className="gap-2 h-10"
+                        >
+                            <Shuffle size={16} />
+                            Shuffle Order
+                        </Button>
+                        
                         <div className="flex items-center gap-3">
                             <Switch 
                                 checked={liveRss} 
@@ -134,14 +178,26 @@ function App() {
                     <div className="text-center text-muted-foreground mb-8">
                         <span>{readCount} of {totalCount} articles read</span>
                         <span className="mx-2">•</span>
-                        <span>Showing articles from all active sources</span>
+                        <span>
+                            {displayedArticles.length > 0 && (() => {
+                                const sourceCounts = displayedArticles.reduce((acc, article) => {
+                                    acc[article.source] = (acc[article.source] || 0) + 1;
+                                    return acc;
+                                }, {} as Record<string, number>);
+                                
+                                const sourcesWithMultiple = Object.values(sourceCounts).filter(count => count >= 2).length;
+                                const totalSources = Object.keys(sourceCounts).length;
+                                
+                                return `${totalSources} sources (${sourcesWithMultiple} with 2+ articles)`;
+                            })()}
+                        </span>
                     </div>
                 </div>
 
                 {/* Articles List */}
                 <ScrollArea className="h-[calc(100vh-400px)]">
                     <div className="space-y-6">
-                        {articles.length === 0 && !isLoading && (
+                        {displayedArticles.length === 0 && !isLoading && (
                             <div className="text-center py-12">
                                 <Calendar size={48} className="text-muted-foreground mx-auto mb-4" />
                                 <h3 className="text-lg font-semibold text-muted-foreground mb-2">
@@ -153,7 +209,7 @@ function App() {
                             </div>
                         )}
                         
-                        {isLoading && articles.length === 0 && (
+                        {isLoading && displayedArticles.length === 0 && (
                             <div className="text-center py-12">
                                 <RefreshCw size={48} className="text-muted-foreground mx-auto mb-4 animate-spin" />
                                 <h3 className="text-lg font-semibold text-muted-foreground mb-2">
@@ -165,7 +221,7 @@ function App() {
                             </div>
                         )}
                         
-                        {articles.map((article) => (
+                        {displayedArticles.map((article) => (
                             <ArticleCard
                                 key={article.id}
                                 article={article}
