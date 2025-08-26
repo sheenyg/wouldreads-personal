@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useKV } from '@github/spark/hooks';
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArticleCard } from "@/components/ArticleCard";
-import { RefreshCw, Newspaper } from "@phosphor-icons/react";
+import { RefreshCw, Gear, Calendar } from "@phosphor-icons/react";
 import { Article } from "@/lib/types";
 import { aggregateArticles } from "@/lib/rss";
 import { toast, Toaster } from 'sonner';
@@ -12,6 +13,7 @@ function App() {
     const [articles, setArticles] = useKV<Article[]>("articles", []);
     const [readArticleIds, setReadArticleIds] = useKV<string[]>("read-articles", []);
     const [isLoading, setIsLoading] = useState(false);
+    const [liveRss, setLiveRss] = useKV<boolean>("live-rss", true);
     const [lastFetch, setLastFetch] = useKV<string>("last-fetch", "");
 
     const loadArticles = async () => {
@@ -80,45 +82,68 @@ function App() {
 
     return (
         <div className="min-h-screen bg-background">
-            <div className="max-w-4xl mx-auto px-4 py-8">
+            <div className="max-w-5xl mx-auto px-6 py-12">
                 {/* Header */}
-                <div className="text-center mb-8">
-                    <div className="flex items-center justify-center gap-3 mb-4">
-                        <Newspaper size={32} className="text-primary" />
-                        <h1 className="text-3xl font-bold text-foreground">wouldreads</h1>
-                    </div>
-                    <p className="text-muted-foreground text-lg mb-6">
+                <div className="text-center mb-12">
+                    <h1 className="text-5xl font-bold text-primary mb-4 title-font">wouldreads</h1>
+                    <p className="text-muted-foreground text-lg max-w-3xl mx-auto">
                         Automatic article recommendations from my favorite tech + culture news sources
                     </p>
-                    
-                    {/* Stats and Refresh */}
-                    <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground mb-2">
-                        <span>{totalCount} articles</span>
-                        <span>•</span>
-                        <span>{readCount} read</span>
-                        <span>•</span>
-                        <span>
-                            {lastFetch ? `Updated ${new Date(lastFetch).toLocaleTimeString()}` : 'Not loaded'}
-                        </span>
+                </div>
+
+                {/* Controls */}
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                        <Button 
+                            variant="outline" 
+                            className="gap-2 h-10"
+                        >
+                            <Gear size={16} />
+                            Manage Sources
+                        </Button>
+                        
+                        <Button 
+                            onClick={loadArticles} 
+                            disabled={isLoading}
+                            variant="outline"
+                            className="gap-2 h-10"
+                        >
+                            <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
+                            Refresh Articles
+                        </Button>
+                        
+                        <div className="flex items-center gap-3">
+                            <Switch 
+                                checked={liveRss} 
+                                onCheckedChange={setLiveRss}
+                                className="data-[state=checked]:bg-primary"
+                            />
+                            <span className="text-sm font-medium">Live RSS</span>
+                        </div>
                     </div>
                     
-                    <Button 
-                        onClick={loadArticles} 
-                        disabled={isLoading}
-                        className="gap-2"
-                        size="sm"
-                    >
-                        <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
-                        {isLoading ? 'Loading...' : 'Refresh Articles'}
+                    <Button variant="outline" className="gap-2 h-10">
+                        <Calendar size={16} />
+                        Today's selection
                     </Button>
                 </div>
 
+                {/* Articles Section */}
+                <div className="mb-8">
+                    <h2 className="text-3xl font-bold text-center mb-4 title-font">Today's Curated Articles</h2>
+                    <div className="text-center text-muted-foreground mb-8">
+                        <span>{readCount} of {totalCount} articles read</span>
+                        <span className="mx-2">•</span>
+                        <span>Showing articles from all active sources</span>
+                    </div>
+                </div>
+
                 {/* Articles List */}
-                <ScrollArea className="h-[calc(100vh-300px)]">
-                    <div className="space-y-4">
+                <ScrollArea className="h-[calc(100vh-400px)]">
+                    <div className="space-y-6">
                         {articles.length === 0 && !isLoading && (
                             <div className="text-center py-12">
-                                <Newspaper size={48} className="text-muted-foreground mx-auto mb-4" />
+                                <Calendar size={48} className="text-muted-foreground mx-auto mb-4" />
                                 <h3 className="text-lg font-semibold text-muted-foreground mb-2">
                                     No articles loaded
                                 </h3>

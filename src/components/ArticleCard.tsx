@@ -13,7 +13,7 @@ interface ArticleCardProps {
 
 export function ArticleCard({ article, onMarkAsRead }: ArticleCardProps) {
   const handleCardClick = (e: React.MouseEvent) => {
-    // Only open link if not clicking on the read button
+    // Only open link if not clicking on buttons
     if ((e.target as HTMLElement).closest('button')) {
       return;
     }
@@ -25,55 +25,74 @@ export function ArticleCard({ article, onMarkAsRead }: ArticleCardProps) {
     onMarkAsRead(article.id);
   };
 
+  const handleReadFullArticle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    window.open(article.link, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <Card 
       className={cn(
-        "cursor-pointer transition-all duration-200 hover:shadow-md hover:border-accent/30",
-        article.isRead && "opacity-60 bg-muted/30"
+        "cursor-pointer transition-all duration-200 hover:shadow-lg border-2",
+        article.isRead ? "opacity-75 bg-muted/20 border-border/50" : "border-border hover:border-primary/20"
       )}
       onClick={handleCardClick}
     >
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
+      <CardHeader className="pb-4">
+        <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <h3 className={cn(
-              "font-semibold text-lg leading-tight line-clamp-2",
-              article.isRead && "text-muted-foreground"
+              "font-bold text-xl leading-tight mb-3 title-font",
+              article.isRead ? "text-muted-foreground" : "text-foreground"
             )}>
               {article.title}
             </h3>
-            <div className="flex items-center gap-2 mt-2">
-              <Badge variant="secondary" className="text-xs">
+            <div className="flex items-center gap-3">
+              <span className="font-medium text-sm text-foreground">
                 {article.source}
-              </Badge>
-              <span className="text-xs text-muted-foreground">
+              </span>
+              <span className="text-sm text-muted-foreground">
                 {formatTimeAgo(article.publishedAt)}
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <Button
-              variant={article.isRead ? "default" : "outline"}
-              size="sm"
-              onClick={handleMarkAsRead}
-              className={cn(
-                "h-8 w-8 p-0",
-                article.isRead && "bg-accent hover:bg-accent/90"
-              )}
-            >
-              <Check size={14} weight={article.isRead ? "bold" : "regular"} />
-            </Button>
-            <ExternalLink size={16} className="text-muted-foreground" />
-          </div>
+          <Button
+            variant={article.isRead ? "default" : "default"}
+            size="sm"
+            onClick={handleMarkAsRead}
+            className={cn(
+              "bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 h-auto rounded-md",
+              article.isRead && "bg-muted hover:bg-muted/90 text-muted-foreground"
+            )}
+          >
+            {article.isRead ? (
+              <>
+                <Check size={14} className="mr-1" />
+                Read
+              </>
+            ) : (
+              "Mark Read"
+            )}
+          </Button>
         </div>
       </CardHeader>
-      <CardContent className="pt-0">
+      <CardContent className="pt-0 pb-6">
         <p className={cn(
-          "text-sm leading-relaxed line-clamp-3",
+          "text-base leading-relaxed mb-4",
           article.isRead ? "text-muted-foreground" : "text-foreground"
         )}>
           {article.description}
         </p>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleReadFullArticle}
+          className="gap-2 text-sm"
+        >
+          <ExternalLink size={14} />
+          Read Full Article
+        </Button>
       </CardContent>
     </Card>
   );
