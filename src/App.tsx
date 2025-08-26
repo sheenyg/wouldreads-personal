@@ -237,6 +237,12 @@ function App() {
                     </div>
                 </ScrollArea>
             </div>
+            
+            {/* Footer */}
+            <footer className="text-center py-8 text-muted-foreground text-sm">
+                <p>Made with love by GitHub Spark and Sheena Ganju</p>
+            </footer>
+            
             <Toaster />
         </div>
     );
